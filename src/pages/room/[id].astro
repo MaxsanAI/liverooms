@@ -44,9 +44,10 @@ const { id } = Astro.params;
   </main>
 </MainLayout>
 
+<script src="https://cdn.jsdelivr.net/npm/@cloudflare/realtimekit@latest/dist/browser.js"></script>
+
 <script type="module">
   import { defineCustomElements } from "https://cdn.jsdelivr.net/npm/@cloudflare/realtimekit-ui@latest/loader/index.es2017.js";
-  import "https://cdn.jsdelivr.net/npm/@cloudflare/realtimekit@latest/dist/browser.js";
 
   defineCustomElements();
 
@@ -96,7 +97,8 @@ const { id } = Astro.params;
       roomInfo.hidden = true;
       meetingWrap.hidden = false;
 
-      const meeting = await window.RealtimeKitClient.init({
+      const RealtimeKitClient = (globalThis as typeof globalThis & { RealtimeKitClient: typeof import("https://cdn.jsdelivr.net/npm/@cloudflare/realtimekit@latest/dist/browser.js") }).RealtimeKitClient;
+      const meeting = await RealtimeKitClient.init({
         authToken: result.token,
         defaults: {
           audio: true,

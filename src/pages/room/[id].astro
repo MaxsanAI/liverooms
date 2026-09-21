@@ -23,12 +23,12 @@ const { id } = Astro.params;
           </label>
 
           <div class="join-actions">
-            <button id="join-listener" class="secondary-button">Join as Listener</button>
-            <button id="join-host" class="primary-button">Join as Host</button>
+            <button type="button" id="join-listener" class="secondary-button">Join as Listener</button>
+            <button type="button" id="join-host" class="primary-button">Join as Host</button>
           </div>
         </div>
 
-        <p id="room-status" class="room-status" aria-live="polite"></p>
+        <p id="room-status" class="room-status" aria-live="polite">Ready to join.</p>
       </div>
 
       <div id="meeting-wrap" class="meeting-wrap" hidden>
@@ -44,14 +44,8 @@ const { id } = Astro.params;
   </main>
 </MainLayout>
 
-<script src="https://cdn.jsdelivr.net/npm/@cloudflare/realtimekit@latest/dist/browser.js"></script>
-
 <script type="module">
-  import { defineCustomElements } from "https://cdn.jsdelivr.net/npm/@cloudflare/realtimekit-ui@latest/loader/index.es2017.js";
-
-  defineCustomElements();
-
-  const roomId = {JSON.stringify(id)};
+  const roomId = ${JSON.stringify(id)};
   const roomInfo = document.querySelector("#room-info");
   const meetingWrap = document.querySelector("#meeting-wrap");
   const status = document.querySelector("#room-status");
@@ -60,21 +54,48 @@ const { id } = Astro.params;
   const hostButton = document.querySelector("#join-host");
   const meetingElement = document.querySelector("#rtk-meeting");
 
+  const setStatus = (message) => {
+    if (status) status.textContent = message;
+  };
+
+  if (!roomInfo || !meetingWrap || !status || !nameInput || !listenerButton || !hostButton || !meetingElement) {
+    throw new Error("Live room UI could not initialize.");
+  }
+
   const savedId = localStorage.getItem("liverooms-participant-id") || crypto.randomUUID();
   localStorage.setItem("liverooms-participant-id", savedId);
 
   const savedName = localStorage.getItem("liverooms-participant-name");
-  if (savedName && nameInput) nameInput.value = savedName;
+  if (savedName) nameInput.value = savedName;
+
+  let RealtimeKitClient = null;
+  let sdkPromise = null;
+
+  async function loadRealtimeKit() {
+    if (RealtimeKitClient) return RealtimeKitClient;
+
+    if (!sdkPromise) {
+      sdkPromise = Promise.all([
+        import("https://cdn.jsdelivr.net/npm/@cloudflare/realtimekit@latest/dist/index.es.js"),
+        import("https://cdn.jsdelivr.net/npm/@cloudflare/realtimekit-ui@latest/loader/index.es2017.js")
+      ]).then(([core, ui]) => {
+        ui.defineCustomElements();
+        RealtimeKitClient = core.default || core.RealtimeKitClient;
+        if (!RealtimeKitClient) throw new Error("RealtimeKit SDK failed to load.");
+        return RealtimeKitClient;
+      });
+    }
+
+    return sdkPromise;
+  }
 
   async function joinRoom(role) {
-    if (!status || !meetingElement || !meetingWrap || !roomInfo) return;
-
-    const name = String(nameInput?.value || "Guest").trim().slice(0, 80) || "Guest";
+    const name = String(nameInput.value || "Guest").trim().slice(0, 80) || "Guest";
     localStorage.setItem("liverooms-participant-name", name);
 
-    listenerButton?.setAttribute("disabled", "true");
-    hostButton?.setAttribute("disabled", "true");
-    status.textContent = "Connecting to the live room…";
+    listenerButton.disabled = true;
+    hostButton.disabled = true;
+    setStatus("Connecting to the live room…");
 
     try {
       const response = await fetch(`/api/rooms/${roomId}/join`, {
@@ -93,17 +114,14 @@ const { id } = Astro.params;
         throw new Error(result.error || "Could not join the room.");
       }
 
-      status.textContent = "Connected. Loading audio room…";
+      setStatus("Connected. Loading audio room…");
       roomInfo.hidden = true;
       meetingWrap.hidden = false;
 
-      const RealtimeKitClient = (globalThis as any).RealtimeKitClient;
-      const meeting = await RealtimeKitClient.init({
-        authToken: result.token,
-        defaults: {
-          audio: true,
-          video: false
-        }
+      const Client = await loadRealtimeKit();
+
+      const meeting = await Client.init({
+        authToken: result.token
       });
 
       meetingElement.meeting = meeting;
@@ -111,18 +129,24 @@ const { id } = Astro.params;
     } catch (error) {
       roomInfo.hidden = false;
       meetingWrap.hidden = true;
-      listenerButton?.removeAttribute("disabled");
-      hostButton?.removeAttribute("disabled");
-      status.textContent = error instanceof Error ? error.message : "Could not join the room.";
+      listenerButton.disabled = false;
+      hostButton.disabled = false;
+      setStatus(error instanceof Error ? error.message : "Could not join the room.");
+      console.error("LiveRooms join error:", error);
     }
   }
 
-  listenerButton?.addEventListener("click", () => joinRoom("listener"));
-  hostButton?.addEventListener("click", () => joinRoom("host"));
+  listenerButton.addEventListener("click", () => {
+    void joinRoom("listener");
+  });
+
+  hostButton.addEventListener("click", () => {
+    void joinRoom("host");
+  });
 
   const params = new URLSearchParams(window.location.search);
   if (params.get("role") === "host") {
-    joinRoom("host");
+    void joinRoom("host");
   }
 </script>
 

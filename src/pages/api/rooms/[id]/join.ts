@@ -1,5 +1,10 @@
 import type { APIRoute } from "astro";
 
+type RealtimeError = {
+  code?: string;
+  message?: string;
+};
+
 type Env = {
   DB?: D1Database;
   REALTIMEKIT_API_TOKEN?: string;
@@ -87,14 +92,18 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
 
       const meetingPayload = await meetingResponse.json() as {
         success?: boolean;
-        result?: { id?: string };
+        data?: { id?: string };
+        errors?: RealtimeError[];
       };
 
-      if (!meetingResponse.ok || !meetingPayload.result?.id) {
-        return json({ error: "Could not create the realtime meeting." }, 502);
+      if (!meetingResponse.ok || !meetingPayload.data?.id) {
+        const detail = meetingPayload.errors?.map((error) => error.message).filter(Boolean).join(" | ");
+        return json({
+          error: detail || `Could not create the realtime meeting (HTTP ${meetingResponse.status}).`
+        }, 502);
       }
 
-      meetingId = meetingPayload.result.id;
+      meetingId = meetingPayload.data.id;
 
       await db.prepare(`
         UPDATE rooms
@@ -121,14 +130,18 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
 
     const participantPayload = await participantResponse.json() as {
       success?: boolean;
-      result?: {
+      data?: {
         id?: string;
         token?: string;
       };
+      errors?: RealtimeError[];
     };
 
-    if (!participantResponse.ok || !participantPayload.result?.token) {
-      return json({ error: "Could not create the room participant." }, 502);
+    if (!participantResponse.ok || !participantPayload.data?.token) {
+      const detail = participantPayload.errors?.map((error) => error.message).filter(Boolean).join(" | ");
+      return json({
+        error: detail || `Could not create the room participant (HTTP ${participantResponse.status}).`
+      }, 502);
     }
 
     await db.prepare(`
@@ -151,9 +164,10 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       meetingId,
       participantId,
       role,
-      token: participantPayload.result.token
+      token: participantPayload.data.token
     });
-  } catch {
+  } catch (error) {
+    console.error("RealtimeKit connection failed:", error);
     return json({ error: "RealtimeKit connection failed." }, 502);
   }
 };

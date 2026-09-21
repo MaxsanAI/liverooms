@@ -1,0 +1,20 @@
+{
+  "name": "liverooms",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^12.6.0",
+    "@cloudflare/realtimekit-react": "^0.7.0",
+    "@cloudflare/realtimekit-react-ui": "^0.7.0",
+    "astro": "^5.14.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}

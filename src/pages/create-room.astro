@@ -90,7 +90,7 @@ import "../styles/global.css";
         throw new Error(result.error || "Could not create the room.");
       }
 
-      window.location.href = `/room/${result.room.id}`;
+      window.location.href = `/room/${result.room.id}?role=host`;
     } catch (error) {
       status.textContent = error instanceof Error ? error.message : "Something went wrong.";
     }

@@ -112,8 +112,14 @@ const autoHost = Astro.url.searchParams.get("role") === "host";
 
       const result = await response.json();
 
+      console.log("LiveRooms join API response:", {
+        ok: response.ok,
+        status: response.status,
+        result
+      });
+
       if (!response.ok || !result.token) {
-        throw new Error(result.error || "Could not join the room.");
+        throw new Error(result.error || `Could not join the room (HTTP ${response.status}).`);
       }
 
       setStatus(

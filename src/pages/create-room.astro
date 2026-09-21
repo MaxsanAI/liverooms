@@ -90,10 +90,21 @@ import "../styles/global.css";
         body: JSON.stringify(payload)
       });
 
-      const result = await response.json();
+      const responseText = await response.text();
+      let result = {};
+
+      try {
+        result = responseText ? JSON.parse(responseText) : {};
+      } catch {
+        throw new Error("The server returned an invalid response. Please try again.");
+      }
 
       if (!response.ok) {
         throw new Error(result.error || "Could not create the room.");
+      }
+
+      if (!result.room?.id) {
+        throw new Error("Room was not created. Please try again.");
       }
 
       window.location.href = `/room/${result.room.id}?role=host`;

@@ -36,7 +36,13 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
 
   if (!apiToken || !accountId) {
     return json({
-      error: "RealtimeKit is not configured yet. Add REALTIMEKIT_API_TOKEN and REALTIMEKIT_ACCOUNT_ID in Cloudflare."
+      error: "RealtimeKit is not configured yet. Add REALTIMEKIT_API_TOKEN and REALTIMEKIT_ACCOUNT_ID in Cloudflare.",
+      diagnostic: {
+        tokenPresent: Boolean(apiToken),
+        tokenLength: apiToken?.length ?? 0,
+        accountId: accountId || null,
+        appId
+      }
     }, 503);
   }
 
@@ -96,10 +102,25 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
         errors?: RealtimeError[];
       };
 
+      const upstreamErrors = meetingPayload.errors ?? [];
+      const detail = upstreamErrors
+        .map((error) => error.message || error.code)
+        .filter(Boolean)
+        .join(" | ");
+
       if (!meetingResponse.ok || !meetingPayload.data?.id) {
-        const detail = meetingPayload.errors?.map((error) => error.message).filter(Boolean).join(" | ");
         return json({
-          error: detail || `Could not create the realtime meeting (HTTP ${meetingResponse.status}).`
+          error: detail || `Could not create the realtime meeting (HTTP ${meetingResponse.status}).`,
+          stage: "create_meeting",
+          diagnostic: {
+            tokenPresent: Boolean(apiToken),
+            tokenLength: apiToken.length,
+            accountId,
+            appId,
+            upstreamStatus: meetingResponse.status,
+            upstreamSuccess: meetingPayload.success ?? false,
+            upstreamErrors
+          }
         }, 502);
       }
 
@@ -137,10 +158,26 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       errors?: RealtimeError[];
     };
 
+    const participantErrors = participantPayload.errors ?? [];
+    const participantDetail = participantErrors
+      .map((error) => error.message || error.code)
+      .filter(Boolean)
+      .join(" | ");
+
     if (!participantResponse.ok || !participantPayload.data?.token) {
-      const detail = participantPayload.errors?.map((error) => error.message).filter(Boolean).join(" | ");
       return json({
-        error: detail || `Could not create the room participant (HTTP ${participantResponse.status}).`
+        error: participantDetail || `Could not create the room participant (HTTP ${participantResponse.status}).`,
+        stage: "create_participant",
+        diagnostic: {
+          tokenPresent: Boolean(apiToken),
+          tokenLength: apiToken.length,
+          accountId,
+          appId,
+          meetingId,
+          upstreamStatus: participantResponse.status,
+          upstreamSuccess: participantPayload.success ?? false,
+          upstreamErrors: participantErrors
+        }
       }, 502);
     }
 

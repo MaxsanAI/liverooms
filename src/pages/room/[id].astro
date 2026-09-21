@@ -3,20 +3,21 @@ import MainLayout from "../../layouts/MainLayout.astro";
 import "../../styles/global.css";
 
 const { id } = Astro.params;
+const autoHost = Astro.url.searchParams.get("role") === "host";
 ---
 
 <MainLayout title="Live Room — LiveRooms" description="Join a live conversation on LiveRooms.">
   <main class="room-page">
     <a href="/" class="back-link">← LiveRooms</a>
 
-    <section class="room-shell">
+    <section class="room-shell" data-room-id={id} data-auto-host={autoHost ? "true" : "false"}>
       <div id="room-info" class="room-info">
         <div class="live-pill"><span></span> LIVE ROOM</div>
         <p class="room-id">Room {id}</p>
         <h1>Join the conversation.</h1>
         <p>Enter your name and join this live room.</p>
 
-        <div class="join-panel">
+        <div class="join-panel" id="join-panel" hidden={autoHost}>
           <label>
             <span>Your name</span>
             <input id="participant-name" maxlength="80" placeholder="Your name" value="Guest" />
@@ -42,7 +43,8 @@ const { id } = Astro.params;
 </MainLayout>
 
 <script type="module">
-  const roomId = ${JSON.stringify(id)};
+  const roomShell = document.querySelector(".room-shell");
+  const roomId = roomShell?.getAttribute("data-room-id") || "";
   const params = new URLSearchParams(window.location.search);
   const requestedRole = params.get("role") === "host" ? "host" : "listener";
 
@@ -57,9 +59,11 @@ const { id } = Astro.params;
     if (status) status.textContent = message;
   };
 
-  if (!roomInfo || !meetingWrap || !status || !nameInput || !joinButton || !meetingElement) {
+  if (!roomShell || !roomId || !roomInfo || !meetingWrap || !status || !nameInput || !meetingElement) {
     throw new Error("Live room UI could not initialize.");
   }
+
+  const isHost = roomShell.getAttribute("data-auto-host") === "true";
 
   const savedId = localStorage.getItem("liverooms-participant-id") || crypto.randomUUID();
   localStorage.setItem("liverooms-participant-id", savedId);
@@ -92,7 +96,7 @@ const { id } = Astro.params;
     const name = String(nameInput.value || "Guest").trim().slice(0, 80) || "Guest";
     localStorage.setItem("liverooms-participant-name", name);
 
-    joinButton.disabled = true;
+    if (joinButton) joinButton.disabled = true;
     setStatus("Connecting to the live room…");
 
     try {
@@ -129,17 +133,19 @@ const { id } = Astro.params;
     } catch (error) {
       roomInfo.hidden = false;
       meetingWrap.hidden = true;
-      joinButton.disabled = false;
+      if (joinButton) joinButton.disabled = false;
       setStatus(error instanceof Error ? error.message : "Could not join the room.");
       console.error("LiveRooms join error:", error);
     }
   }
 
-  joinButton.addEventListener("click", () => {
-    void joinRoom();
-  });
+  if (joinButton) {
+    joinButton.addEventListener("click", () => {
+      void joinRoom();
+    });
+  }
 
-  if (requestedRole === "host") {
+  if (isHost) {
     void joinRoom();
   }
 </script>

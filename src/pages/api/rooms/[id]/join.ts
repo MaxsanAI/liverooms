@@ -132,6 +132,16 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
     }
 
     await db.prepare(`
+      INSERT OR IGNORE INTO users (id, username, display_name, language)
+      VALUES (?, ?, ?, ?)
+    `).bind(
+      participantId,
+      role + "_" + participantId.replace(/-/g, "").slice(0, 24),
+      name,
+      "en"
+    ).run();
+
+    await db.prepare(`
       INSERT OR REPLACE INTO room_participants (room_id, user_id, role)
       VALUES (?, ?, ?)
     `).bind(roomId, participantId, role).run();

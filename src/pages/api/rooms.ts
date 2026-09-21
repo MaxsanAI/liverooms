@@ -2,22 +2,25 @@ import type { APIRoute } from "astro";
 
 type Env = {
   DB?: D1Database;
+  REALTIMEKIT_API_TOKEN?: string;
+  REALTIMEKIT_ACCOUNT_ID?: string;
+  REALTIMEKIT_APP_ID?: string;
 };
 
 export const prerender = false;
+
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json" }
+  });
 
 export const GET: APIRoute = async ({ locals }) => {
   const runtime = (locals as { runtime?: { env?: Env } }).runtime;
   const db = runtime?.env?.DB;
 
   if (!db) {
-    return new Response(JSON.stringify({
-      error: "D1 database is not connected yet.",
-      rooms: []
-    }), {
-      status: 503,
-      headers: { "content-type": "application/json" }
-    });
+    return json({ error: "D1 database is not connected yet.", rooms: [] }, 503);
   }
 
   const result = await db.prepare(`
@@ -41,9 +44,7 @@ export const GET: APIRoute = async ({ locals }) => {
     LIMIT 50
   `).all();
 
-  return new Response(JSON.stringify({ rooms: result.results ?? [] }), {
-    headers: { "content-type": "application/json" }
-  });
+  return json({ rooms: result.results ?? [] });
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
@@ -51,10 +52,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const db = runtime?.env?.DB;
 
   if (!db) {
-    return new Response(JSON.stringify({ error: "D1 database is not connected yet." }), {
-      status: 503,
-      headers: { "content-type": "application/json" }
-    });
+    return json({ error: "D1 database is not connected yet." }, 503);
   }
 
   let body: {
@@ -67,18 +65,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
   try {
     body = await request.json();
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON." }), {
-      status: 400,
-      headers: { "content-type": "application/json" }
-    });
+    return json({ error: "Invalid JSON." }, 400);
   }
 
   const title = body.title?.trim();
   if (!title || title.length < 3 || title.length > 120) {
-    return new Response(JSON.stringify({ error: "Title must be between 3 and 120 characters." }), {
-      status: 400,
-      headers: { "content-type": "application/json" }
-    });
+    return json({ error: "Title must be between 3 and 120 characters." }, 400);
   }
 
   const id = crypto.randomUUID();
@@ -91,10 +83,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     VALUES (?, ?, ?, ?, ?, 'scheduled')
   `).bind(id, title, description, category, language).run();
 
-  return new Response(JSON.stringify({
+  return json({
     room: { id, title, description, category, language, status: "scheduled" }
-  }), {
-    status: 201,
-    headers: { "content-type": "application/json" }
-  });
+  }, 201);
 };

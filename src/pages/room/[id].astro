@@ -97,7 +97,7 @@ const { id } = Astro.params;
       roomInfo.hidden = true;
       meetingWrap.hidden = false;
 
-      const RealtimeKitClient = (globalThis as typeof globalThis & { RealtimeKitClient: typeof import("https://cdn.jsdelivr.net/npm/@cloudflare/realtimekit@latest/dist/browser.js") }).RealtimeKitClient;
+      const RealtimeKitClient = (globalThis as any).RealtimeKitClient;
       const meeting = await RealtimeKitClient.init({
         authToken: result.token,
         defaults: {

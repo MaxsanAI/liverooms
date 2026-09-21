@@ -5,46 +5,143 @@ import "../../styles/global.css";
 const { id } = Astro.params;
 ---
 
-<MainLayout title="Live Room — LiveRooms" description="A live conversation on LiveRooms.">
+<MainLayout title="Live Room — LiveRooms" description="Join a live conversation on LiveRooms.">
   <main class="room-page">
     <a href="/" class="back-link">← LiveRooms</a>
 
-    <section class="room-card">
-      <div class="live-pill"><span></span> ROOM READY</div>
-      <p class="room-id">Room {id}</p>
-      <h1>Your room is ready.</h1>
-      <p>
-        The room record has been created. RealtimeKit meeting creation and participant
-        authentication will be connected here next.
-      </p>
+    <section class="room-shell">
+      <div id="room-info" class="room-info">
+        <div class="live-pill"><span></span> LIVE ROOM</div>
+        <p class="room-id">Room {id}</p>
+        <h1>Join the conversation.</h1>
+        <p>Choose how you want to enter this room.</p>
 
-      <div class="room-actions">
-        <button disabled>Join as Host</button>
-        <a href="/">Browse Live Rooms</a>
+        <div class="join-panel">
+          <label>
+            <span>Your name</span>
+            <input id="participant-name" maxlength="80" placeholder="Your name" value="Guest" />
+          </label>
+
+          <div class="join-actions">
+            <button id="join-listener" class="secondary-button">Join as Listener</button>
+            <button id="join-host" class="primary-button">Join as Host</button>
+          </div>
+        </div>
+
+        <p id="room-status" class="room-status" aria-live="polite"></p>
+      </div>
+
+      <div id="meeting-wrap" class="meeting-wrap" hidden>
+        <div class="meeting-topbar">
+          <a href="/" class="meeting-back">← Leave room</a>
+          <span class="meeting-label">LiveRooms Audio</span>
+        </div>
+        <div id="meeting-container" class="meeting-container">
+          <rtk-meeting id="rtk-meeting" show-setup-screen="true"></rtk-meeting>
+        </div>
       </div>
     </section>
   </main>
 </MainLayout>
 
+<script type="module">
+  import { defineCustomElements } from "https://cdn.jsdelivr.net/npm/@cloudflare/realtimekit-ui@latest/loader/index.es2017.js";
+  import "https://cdn.jsdelivr.net/npm/@cloudflare/realtimekit@latest/dist/browser.js";
+
+  defineCustomElements();
+
+  const roomId = {JSON.stringify(id)};
+  const roomInfo = document.querySelector("#room-info");
+  const meetingWrap = document.querySelector("#meeting-wrap");
+  const status = document.querySelector("#room-status");
+  const nameInput = document.querySelector("#participant-name");
+  const listenerButton = document.querySelector("#join-listener");
+  const hostButton = document.querySelector("#join-host");
+  const meetingElement = document.querySelector("#rtk-meeting");
+
+  const savedId = localStorage.getItem("liverooms-participant-id") || crypto.randomUUID();
+  localStorage.setItem("liverooms-participant-id", savedId);
+
+  const savedName = localStorage.getItem("liverooms-participant-name");
+  if (savedName && nameInput) nameInput.value = savedName;
+
+  async function joinRoom(role) {
+    if (!status || !meetingElement || !meetingWrap || !roomInfo) return;
+
+    const name = String(nameInput?.value || "Guest").trim().slice(0, 80) || "Guest";
+    localStorage.setItem("liverooms-participant-name", name);
+
+    listenerButton?.setAttribute("disabled", "true");
+    hostButton?.setAttribute("disabled", "true");
+    status.textContent = "Connecting to the live room…";
+
+    try {
+      const response = await fetch(`/api/rooms/${roomId}/join`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          participantId: savedId,
+          name,
+          role
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.token) {
+        throw new Error(result.error || "Could not join the room.");
+      }
+
+      status.textContent = "Connected. Loading audio room…";
+      roomInfo.hidden = true;
+      meetingWrap.hidden = false;
+
+      const meeting = await window.RealtimeKitClient.init({
+        authToken: result.token,
+        defaults: {
+          audio: true,
+          video: false
+        }
+      });
+
+      meetingElement.meeting = meeting;
+      await meeting.join();
+    } catch (error) {
+      roomInfo.hidden = false;
+      meetingWrap.hidden = true;
+      listenerButton?.removeAttribute("disabled");
+      hostButton?.removeAttribute("disabled");
+      status.textContent = error instanceof Error ? error.message : "Could not join the room.";
+    }
+  }
+
+  listenerButton?.addEventListener("click", () => joinRoom("listener"));
+  hostButton?.addEventListener("click", () => joinRoom("host"));
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("role") === "host") {
+    joinRoom("host");
+  }
+</script>
+
 <style>
   .room-page {
     min-height: 100vh;
     padding: 32px 20px;
-    display: grid;
-    place-items: center;
   }
 
   .back-link {
-    position: absolute;
-    top: 32px;
-    left: 24px;
     color: var(--muted);
     text-decoration: none;
   }
 
-  .room-card {
-    width: min(760px, 100%);
-    padding: clamp(28px, 6vw, 60px);
+  .room-shell {
+    width: min(1100px, 100%);
+    margin: 48px auto 0;
+  }
+
+  .room-info {
+    padding: clamp(28px, 6vw, 64px);
     border: 1px solid var(--border);
     border-radius: 30px;
     background: rgba(18, 18, 24, .82);
@@ -75,45 +172,152 @@ const { id } = Astro.params;
     color: var(--muted);
     font-size: .8rem;
     word-break: break-all;
-    margin-top: 22px;
+    margin: 22px 0 0;
   }
 
   h1 {
     margin: 14px 0;
-    font-size: clamp(2.4rem, 7vw, 5rem);
+    font-size: clamp(2.5rem, 7vw, 5rem);
     line-height: 1;
   }
 
-  .room-card p:not(.room-id) {
+  .room-info > p:not(.room-id):not(.room-status) {
     color: var(--muted);
     line-height: 1.7;
   }
 
-  .room-actions {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-top: 32px;
+  .join-panel {
+    width: min(520px, 100%);
+    margin: 34px auto 0;
+    text-align: left;
   }
 
-  .room-actions button,
-  .room-actions a {
-    padding: 13px 18px;
-    border-radius: 12px;
+  label {
+    display: grid;
+    gap: 9px;
+    color: #d8d8e2;
+    font-size: .9rem;
+    font-weight: 700;
+  }
+
+  input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: #101016;
+    color: white;
+    padding: 14px 15px;
+    font: inherit;
+    outline: none;
+  }
+
+  input:focus {
+    border-color: rgba(167, 139, 250, .8);
+    box-shadow: 0 0 0 3px rgba(167, 139, 250, .12);
+  }
+
+  .join-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .primary-button,
+  .secondary-button {
+    border: 0;
+    border-radius: 14px;
+    padding: 15px 18px;
+    color: white;
     font: inherit;
     font-weight: 800;
-    text-decoration: none;
+    cursor: pointer;
   }
 
-  .room-actions button {
+  .primary-button {
+    background: linear-gradient(135deg, #7c3aed, #06b6d4);
+  }
+
+  .secondary-button {
     border: 1px solid var(--border);
     background: #111118;
-    color: #777783;
   }
 
-  .room-actions a {
-    color: white;
-    background: linear-gradient(135deg, #7c3aed, #06b6d4);
+  button:disabled {
+    opacity: .55;
+    cursor: wait;
+  }
+
+  .room-status {
+    min-height: 24px;
+    margin: 22px 0 0;
+    color: var(--muted);
+  }
+
+  .meeting-wrap {
+    min-height: calc(100vh - 110px);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    background: #050507;
+  }
+
+  .meeting-topbar {
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(12, 12, 17, .96);
+  }
+
+  .meeting-back {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: .88rem;
+  }
+
+  .meeting-label {
+    color: #d8d8e2;
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .meeting-container {
+    height: calc(100vh - 165px);
+    min-height: 560px;
+  }
+
+  rtk-meeting {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  @media (max-width: 640px) {
+    .room-page {
+      padding: 22px 12px;
+    }
+
+    .room-shell {
+      margin-top: 34px;
+    }
+
+    .join-actions {
+      grid-template-columns: 1fr;
+    }
+
+    .meeting-wrap {
+      border-radius: 16px;
+    }
+
+    .meeting-container {
+      min-height: 520px;
+      height: calc(100vh - 130px);
+    }
   }
 </style>

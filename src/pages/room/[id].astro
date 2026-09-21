@@ -119,7 +119,11 @@ const autoHost = Astro.url.searchParams.get("role") === "host";
       });
 
       if (!response.ok || !result.token) {
-        throw new Error(result.error || `Could not join the room (HTTP ${response.status}).`);
+        const diagnostic = result?.diagnostic
+          ? ` | diagnostic: ${JSON.stringify(result.diagnostic)}`
+          : "";
+        const stage = result?.stage ? ` | stage: ${result.stage}` : "";
+        throw new Error((result.error || `Could not join the room (HTTP ${response.status}).`) + stage + diagnostic);
       }
 
       setStatus(

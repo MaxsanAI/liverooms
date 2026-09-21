@@ -81,6 +81,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const id = crypto.randomUUID();
 
   await db.prepare(`
+    INSERT OR IGNORE INTO users (id, username, display_name, language)
+    VALUES (?, ?, ?, ?)
+  `).bind(participantId, `host_${participantId.replace(/-/g, "").slice(0, 24)}`, "Host", language).run();
+
+  await db.prepare(`
     INSERT INTO rooms (id, title, description, category, language, host_id, status)
     VALUES (?, ?, ?, ?, ?, ?, 'scheduled')
   `).bind(id, title, description, category, language, participantId).run();

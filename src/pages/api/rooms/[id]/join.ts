@@ -96,19 +96,30 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
         }
       );
 
-      const meetingPayload = await meetingResponse.json() as {
+      const rawBody = await meetingResponse.text();
+      let meetingPayload: {
         success?: boolean;
         data?: { id?: string };
         errors?: RealtimeError[];
-      };
+      } | null = null;
 
-      const upstreamErrors = meetingPayload.errors ?? [];
+      try {
+        meetingPayload = JSON.parse(rawBody) as {
+          success?: boolean;
+          data?: { id?: string };
+          errors?: RealtimeError[];
+        };
+      } catch {
+        meetingPayload = null;
+      }
+
+      const upstreamErrors = meetingPayload?.errors ?? [];
       const detail = upstreamErrors
         .map((error) => error.message || error.code)
         .filter(Boolean)
         .join(" | ");
 
-      if (!meetingResponse.ok || !meetingPayload.data?.id) {
+      if (!meetingResponse.ok || !meetingPayload?.data?.id) {
         return json({
           error: detail || `Could not create the realtime meeting (HTTP ${meetingResponse.status}).`,
           stage: "create_meeting",
@@ -118,13 +129,19 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
             accountId,
             appId,
             upstreamStatus: meetingResponse.status,
-            upstreamSuccess: meetingPayload.success ?? false,
-            upstreamErrors
+            upstreamSuccess: meetingPayload?.success ?? false,
+            upstreamErrors,
+            upstreamBody: rawBody.slice(0, 4000),
+            upstreamHeaders: {
+              cfRay: meetingResponse.headers.get("cf-ray"),
+              contentType: meetingResponse.headers.get("content-type"),
+              server: meetingResponse.headers.get("server")
+            }
           }
         }, 502);
       }
 
-      meetingId = meetingPayload.data.id;
+      meetingId = meetingPayload!.data!.id;
 
       await db.prepare(`
         UPDATE rooms
@@ -149,22 +166,36 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       }
     );
 
-    const participantPayload = await participantResponse.json() as {
+    const participantRawBody = await participantResponse.text();
+    let participantPayload: {
       success?: boolean;
       data?: {
         id?: string;
         token?: string;
       };
       errors?: RealtimeError[];
-    };
+    } | null = null;
 
-    const participantErrors = participantPayload.errors ?? [];
+    try {
+      participantPayload = JSON.parse(participantRawBody) as {
+        success?: boolean;
+        data?: {
+          id?: string;
+          token?: string;
+        };
+        errors?: RealtimeError[];
+      };
+    } catch {
+      participantPayload = null;
+    }
+
+    const participantErrors = participantPayload?.errors ?? [];
     const participantDetail = participantErrors
       .map((error) => error.message || error.code)
       .filter(Boolean)
       .join(" | ");
 
-    if (!participantResponse.ok || !participantPayload.data?.token) {
+    if (!participantResponse.ok || !participantPayload?.data?.token) {
       return json({
         error: participantDetail || `Could not create the room participant (HTTP ${participantResponse.status}).`,
         stage: "create_participant",
@@ -175,8 +206,14 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
           appId,
           meetingId,
           upstreamStatus: participantResponse.status,
-          upstreamSuccess: participantPayload.success ?? false,
-          upstreamErrors: participantErrors
+          upstreamSuccess: participantPayload?.success ?? false,
+          upstreamErrors: participantErrors,
+          upstreamBody: participantRawBody.slice(0, 4000),
+          upstreamHeaders: {
+            cfRay: participantResponse.headers.get("cf-ray"),
+            contentType: participantResponse.headers.get("content-type"),
+            server: participantResponse.headers.get("server")
+          }
         }
       }, 502);
     }
@@ -201,7 +238,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       meetingId,
       participantId,
       role,
-      token: participantPayload.data.token
+      token: participantPayload!.data!.token
     });
   } catch (error) {
     console.error("RealtimeKit connection failed:", error);

@@ -1,0 +1,119 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import "../../styles/global.css";
+
+const { id } = Astro.params;
+---
+
+<MainLayout title="Live Room — LiveRooms" description="A live conversation on LiveRooms.">
+  <main class="room-page">
+    <a href="/" class="back-link">← LiveRooms</a>
+
+    <section class="room-card">
+      <div class="live-pill"><span></span> ROOM READY</div>
+      <p class="room-id">Room {id}</p>
+      <h1>Your room is ready.</h1>
+      <p>
+        The room record has been created. RealtimeKit meeting creation and participant
+        authentication will be connected here next.
+      </p>
+
+      <div class="room-actions">
+        <button disabled>Join as Host</button>
+        <a href="/">Browse Live Rooms</a>
+      </div>
+    </section>
+  </main>
+</MainLayout>
+
+<style>
+  .room-page {
+    min-height: 100vh;
+    padding: 32px 20px;
+    display: grid;
+    place-items: center;
+  }
+
+  .back-link {
+    position: absolute;
+    top: 32px;
+    left: 24px;
+    color: var(--muted);
+    text-decoration: none;
+  }
+
+  .room-card {
+    width: min(760px, 100%);
+    padding: clamp(28px, 6vw, 60px);
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    background: rgba(18, 18, 24, .82);
+    text-align: center;
+  }
+
+  .live-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid rgba(34, 197, 94, .25);
+    border-radius: 999px;
+    color: #86efac;
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .12em;
+  }
+
+  .live-pill span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22c55e;
+  }
+
+  .room-id {
+    color: var(--muted);
+    font-size: .8rem;
+    word-break: break-all;
+    margin-top: 22px;
+  }
+
+  h1 {
+    margin: 14px 0;
+    font-size: clamp(2.4rem, 7vw, 5rem);
+    line-height: 1;
+  }
+
+  .room-card p:not(.room-id) {
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .room-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 32px;
+  }
+
+  .room-actions button,
+  .room-actions a {
+    padding: 13px 18px;
+    border-radius: 12px;
+    font: inherit;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .room-actions button {
+    border: 1px solid var(--border);
+    background: #111118;
+    color: #777783;
+  }
+
+  .room-actions a {
+    color: white;
+    background: linear-gradient(135deg, #7c3aed, #06b6d4);
+  }
+</style>

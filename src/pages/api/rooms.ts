@@ -60,6 +60,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     description?: string;
     category?: string;
     language?: string;
+    participantId?: string;
   };
 
   try {
@@ -73,15 +74,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return json({ error: "Title must be between 3 and 120 characters." }, 400);
   }
 
-  const id = crypto.randomUUID();
+  const participantId = body.participantId?.trim() || crypto.randomUUID();
   const description = body.description?.trim().slice(0, 500) || null;
   const category = body.category?.trim().slice(0, 60) || "General";
   const language = body.language?.trim().slice(0, 10) || "en";
+  const id = crypto.randomUUID();
 
   await db.prepare(`
-    INSERT INTO rooms (id, title, description, category, language, status)
-    VALUES (?, ?, ?, ?, ?, 'scheduled')
-  `).bind(id, title, description, category, language).run();
+    INSERT INTO rooms (id, title, description, category, language, host_id, status)
+    VALUES (?, ?, ?, ?, ?, ?, 'scheduled')
+  `).bind(id, title, description, category, language, participantId).run();
 
   return json({
     room: { id, title, description, category, language, status: "scheduled" }

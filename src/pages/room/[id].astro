@@ -14,7 +14,7 @@ const { id } = Astro.params;
         <div class="live-pill"><span></span> LIVE ROOM</div>
         <p class="room-id">Room {id}</p>
         <h1>Join the conversation.</h1>
-        <p>Choose how you want to enter this room.</p>
+        <p>Enter your name and join this live room.</p>
 
         <div class="join-panel">
           <label>
@@ -22,10 +22,7 @@ const { id } = Astro.params;
             <input id="participant-name" maxlength="80" placeholder="Your name" value="Guest" />
           </label>
 
-          <div class="join-actions">
-            <button type="button" id="join-listener" class="secondary-button">Join as Listener</button>
-            <button type="button" id="join-host" class="primary-button">Join as Host</button>
-          </div>
+          <button type="button" id="join-room" class="primary-button">Join Live Room</button>
         </div>
 
         <p id="room-status" class="room-status" aria-live="polite">Ready to join.</p>
@@ -46,19 +43,21 @@ const { id } = Astro.params;
 
 <script type="module">
   const roomId = ${JSON.stringify(id)};
+  const params = new URLSearchParams(window.location.search);
+  const requestedRole = params.get("role") === "host" ? "host" : "listener";
+
   const roomInfo = document.querySelector("#room-info");
   const meetingWrap = document.querySelector("#meeting-wrap");
   const status = document.querySelector("#room-status");
   const nameInput = document.querySelector("#participant-name");
-  const listenerButton = document.querySelector("#join-listener");
-  const hostButton = document.querySelector("#join-host");
+  const joinButton = document.querySelector("#join-room");
   const meetingElement = document.querySelector("#rtk-meeting");
 
   const setStatus = (message) => {
     if (status) status.textContent = message;
   };
 
-  if (!roomInfo || !meetingWrap || !status || !nameInput || !listenerButton || !hostButton || !meetingElement) {
+  if (!roomInfo || !meetingWrap || !status || !nameInput || !joinButton || !meetingElement) {
     throw new Error("Live room UI could not initialize.");
   }
 
@@ -89,12 +88,11 @@ const { id } = Astro.params;
     return sdkPromise;
   }
 
-  async function joinRoom(role) {
+  async function joinRoom() {
     const name = String(nameInput.value || "Guest").trim().slice(0, 80) || "Guest";
     localStorage.setItem("liverooms-participant-name", name);
 
-    listenerButton.disabled = true;
-    hostButton.disabled = true;
+    joinButton.disabled = true;
     setStatus("Connecting to the live room…");
 
     try {
@@ -104,7 +102,7 @@ const { id } = Astro.params;
         body: JSON.stringify({
           participantId: savedId,
           name,
-          role
+          role: requestedRole
         })
       });
 
@@ -114,39 +112,35 @@ const { id } = Astro.params;
         throw new Error(result.error || "Could not join the room.");
       }
 
-      setStatus("Connected. Loading audio room…");
+      setStatus(
+        result.role === "host"
+          ? "You are the host. Loading the audio room…"
+          : "Connected. Loading audio room…"
+      );
+
       roomInfo.hidden = true;
       meetingWrap.hidden = false;
 
       const Client = await loadRealtimeKit();
-
-      const meeting = await Client.init({
-        authToken: result.token
-      });
+      const meeting = await Client.init({ authToken: result.token });
 
       meetingElement.meeting = meeting;
       await meeting.join();
     } catch (error) {
       roomInfo.hidden = false;
       meetingWrap.hidden = true;
-      listenerButton.disabled = false;
-      hostButton.disabled = false;
+      joinButton.disabled = false;
       setStatus(error instanceof Error ? error.message : "Could not join the room.");
       console.error("LiveRooms join error:", error);
     }
   }
 
-  listenerButton.addEventListener("click", () => {
-    void joinRoom("listener");
+  joinButton.addEventListener("click", () => {
+    void joinRoom();
   });
 
-  hostButton.addEventListener("click", () => {
-    void joinRoom("host");
-  });
-
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("role") === "host") {
-    void joinRoom("host");
+  if (requestedRole === "host") {
+    void joinRoom();
   }
 </script>
 
@@ -243,31 +237,17 @@ const { id } = Astro.params;
     box-shadow: 0 0 0 3px rgba(167, 139, 250, .12);
   }
 
-  .join-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+  .primary-button {
+    width: 100%;
     margin-top: 16px;
-  }
-
-  .primary-button,
-  .secondary-button {
     border: 0;
     border-radius: 14px;
     padding: 15px 18px;
     color: white;
+    background: linear-gradient(135deg, #7c3aed, #06b6d4);
     font: inherit;
     font-weight: 800;
     cursor: pointer;
-  }
-
-  .primary-button {
-    background: linear-gradient(135deg, #7c3aed, #06b6d4);
-  }
-
-  .secondary-button {
-    border: 1px solid var(--border);
-    background: #111118;
   }
 
   button:disabled {
@@ -331,10 +311,6 @@ const { id } = Astro.params;
 
     .room-shell {
       margin-top: 34px;
-    }
-
-    .join-actions {
-      grid-template-columns: 1fr;
     }
 
     .meeting-wrap {

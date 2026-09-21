@@ -10,7 +10,7 @@ import "../styles/global.css";
 
       <div class="eyebrow">START A CONVERSATION</div>
       <h1>Create your room</h1>
-      <p class="lead">Set up the room now. The live audio connection will be created through LiveRooms' realtime backend.</p>
+      <p class="lead">Set up the room now. You’ll enter automatically as the host.</p>
 
       <form id="create-room-form" class="room-form">
         <label>
@@ -70,11 +70,17 @@ import "../styles/global.css";
     status.textContent = "Creating room…";
 
     const data = new FormData(form);
+    const participantId =
+      localStorage.getItem("liverooms-participant-id") || crypto.randomUUID();
+
+    localStorage.setItem("liverooms-participant-id", participantId);
+
     const payload = {
       title: String(data.get("title") || ""),
       description: String(data.get("description") || ""),
       category: String(data.get("category") || "General"),
-      language: String(data.get("language") || "en")
+      language: String(data.get("language") || "en"),
+      participantId
     };
 
     try {

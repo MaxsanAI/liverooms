@@ -65,7 +65,8 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
 
   const participantId = body.participantId?.trim() || crypto.randomUUID();
   const name = body.name?.trim().slice(0, 80) || "Guest";
-  const role = body.role === "host" ? "host" : "listener";
+  const isHost = body.role === "host" && room.host_id === participantId;
+  const role = isHost ? "host" : "listener";
   const presetName = role === "host" ? "group_call_host" : "group_call_participant";
 
   let meetingId = room.realtime_meeting_id;

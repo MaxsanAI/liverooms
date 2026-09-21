@@ -1,0 +1,449 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+import "../styles/global.css";
+
+const liveRooms = [
+  {
+    title: "AI & The Future",
+    description: "Where AI is taking the world next.",
+    host: "Maxsan",
+    listeners: 128,
+    category: "Technology",
+    language: "English"
+  },
+  {
+    title: "Movie Talk",
+    description: "Cinema, streaming and everything we love watching.",
+    host: "Sarah",
+    listeners: 64,
+    category: "Entertainment",
+    language: "English"
+  },
+  {
+    title: "Late Night Conversations",
+    description: "Open conversations with people from around the world.",
+    host: "Michael",
+    listeners: 31,
+    category: "Social",
+    language: "English"
+  }
+];
+---
+
+<MainLayout>
+  <div class="page">
+    <header class="header">
+      <a class="brand" href="/">
+        <span class="brand-mark">◉</span>
+        <span>LiveRooms</span>
+      </a>
+
+      <nav class="nav">
+        <a href="#rooms">Live Rooms</a>
+        <a href="#categories">Categories</a>
+        <a href="#about">About</a>
+      </nav>
+
+      <div class="header-actions">
+        <button class="language">EN ▾</button>
+        <a class="login" href="/en/">Sign in</a>
+        <a class="create-small" href="#create">Create Room</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-glow"></div>
+
+        <div class="live-badge"><span></span> LIVE NOW</div>
+
+        <h1>Talk.<br /><strong>Listen. Connect.</strong></h1>
+
+        <p>
+          Join live conversations, discover new voices and talk about
+          what matters to you.
+        </p>
+
+        <div class="hero-actions">
+          <a class="primary-button" href="#rooms">Explore Live Rooms</a>
+          <a class="secondary-button" href="#create">+ Create a Room</a>
+        </div>
+
+        <div class="hero-stats">
+          <div><strong>24</strong><span>Live rooms</span></div>
+          <div><strong>1.8K</strong><span>People listening</span></div>
+          <div><strong>37</strong><span>Countries</span></div>
+        </div>
+      </section>
+
+      <section class="rooms-section" id="rooms">
+        <div class="section-heading">
+          <div>
+            <div class="section-label"><span></span> HAPPENING NOW</div>
+            <h2>Live Rooms</h2>
+          </div>
+          <a href="/en/" class="view-all">View all →</a>
+        </div>
+
+        <div class="rooms-grid">
+          {liveRooms.map((room) => (
+            <article class="room-card">
+              <div class="room-top">
+                <span class="live-pill"><span></span> LIVE</span>
+                <span class="listeners">👥 {room.listeners}</span>
+              </div>
+
+              <div class="room-icon">🎙️</div>
+              <h3>{room.title}</h3>
+              <p>{room.description}</p>
+
+              <div class="room-meta">
+                <span>{room.category}</span>
+                <span>·</span>
+                <span>{room.language}</span>
+              </div>
+
+              <div class="room-bottom">
+                <div class="host">
+                  <div class="avatar">{room.host.charAt(0)}</div>
+                  <div>
+                    <small>HOST</small>
+                    <strong>{room.host}</strong>
+                  </div>
+                </div>
+                <button class="join-button">Join</button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section class="create-section" id="create">
+        <div>
+          <div class="section-label"><span></span> YOUR VOICE</div>
+          <h2>Start your own room.</h2>
+          <p>
+            Create a live conversation and invite people to listen,
+            speak and connect.
+          </p>
+        </div>
+
+        <button class="create-button">Create a Room <span>→</span></button>
+      </section>
+    </main>
+
+    <footer>
+      <div class="footer-brand">
+        <span class="brand-mark">◉</span>
+        LiveRooms
+      </div>
+      <span>Live conversations. Real people.</span>
+      <span>© 2026 LiveRooms</span>
+    </footer>
+  </div>
+</MainLayout>
+
+<style>
+  .page { min-height: 100vh; }
+
+  .header {
+    width: min(1240px, calc(100% - 40px));
+    margin: 0 auto;
+    height: 78px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 30px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+  }
+
+  .brand-mark {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+    color: white;
+    font-size: 16px;
+  }
+
+  .nav { display: flex; gap: 30px; color: #a1a1aa; font-size: 14px; }
+  .nav a:hover { color: white; }
+
+  .header-actions { display: flex; align-items: center; gap: 12px; }
+  .language, .login {
+    color: #a1a1aa;
+    background: transparent;
+    border: 0;
+    padding: 9px 10px;
+    font-size: 14px;
+  }
+
+  .create-small {
+    padding: 10px 17px;
+    border-radius: 10px;
+    background: #f4f4f5;
+    color: #09090b;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .hero {
+    position: relative;
+    width: min(1100px, calc(100% - 40px));
+    margin: 0 auto;
+    padding: 105px 0 85px;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .hero-glow {
+    position: absolute;
+    width: 420px;
+    height: 420px;
+    left: 50%;
+    top: 40px;
+    transform: translateX(-50%);
+    background: rgba(124, 58, 237, 0.13);
+    filter: blur(90px);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .live-badge, .section-label {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #a78bfa;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+  }
+
+  .live-badge span, .section-label span, .live-pill span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #f43f5e;
+    box-shadow: 0 0 12px rgba(244, 63, 94, 0.8);
+  }
+
+  .hero h1 {
+    position: relative;
+    margin: 22px 0 20px;
+    font-size: clamp(54px, 8vw, 96px);
+    line-height: 0.94;
+    letter-spacing: -0.065em;
+    font-weight: 800;
+  }
+
+  .hero h1 strong {
+    background: linear-gradient(90deg, #a78bfa, #67e8f9);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .hero p {
+    position: relative;
+    max-width: 570px;
+    margin: 0 auto;
+    color: #a1a1aa;
+    font-size: 17px;
+    line-height: 1.7;
+  }
+
+  .hero-actions { position: relative; display: flex; justify-content: center; gap: 12px; margin-top: 32px; }
+
+  .primary-button, .secondary-button {
+    padding: 14px 22px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 750;
+  }
+
+  .primary-button { background: #f4f4f5; color: #09090b; }
+  .secondary-button { border: 1px solid #27272a; background: rgba(24,24,27,.7); color: #f4f4f5; }
+
+  .hero-stats { position: relative; display: flex; justify-content: center; gap: 55px; margin-top: 65px; }
+  .hero-stats div { display: flex; flex-direction: column; gap: 5px; }
+  .hero-stats strong { font-size: 25px; }
+  .hero-stats span { color: #71717a; font-size: 12px; }
+
+  .rooms-section {
+    width: min(1240px, calc(100% - 40px));
+    margin: 0 auto;
+    padding: 40px 0 90px;
+  }
+
+  .section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    margin-bottom: 25px;
+  }
+
+  .section-heading h2, .create-section h2 {
+    margin: 8px 0 0;
+    font-size: 31px;
+    letter-spacing: -0.045em;
+  }
+
+  .view-all { color: #a1a1aa; font-size: 13px; }
+
+  .rooms-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+  .room-card {
+    min-height: 330px;
+    padding: 22px;
+    border: 1px solid #27272a;
+    border-radius: 18px;
+    background: linear-gradient(145deg, rgba(24,24,27,.95), rgba(15,15,18,.85));
+    transition: transform .2s ease, border-color .2s ease;
+  }
+
+  .room-card:hover { transform: translateY(-3px); border-color: #3f3f46; }
+
+  .room-top, .room-bottom, .host { display: flex; align-items: center; }
+  .room-top, .room-bottom { justify-content: space-between; }
+
+  .live-pill { display: inline-flex; align-items: center; gap: 6px; color: #fb7185; font-size: 10px; font-weight: 800; letter-spacing: .08em; }
+  .listeners { color: #71717a; font-size: 12px; }
+
+  .room-icon {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    margin-top: 28px;
+    border-radius: 16px;
+    background: rgba(124,58,237,.12);
+    font-size: 25px;
+  }
+
+  .room-card h3 { margin: 18px 0 7px; font-size: 20px; letter-spacing: -.03em; }
+  .room-card p { min-height: 44px; margin: 0; color: #a1a1aa; font-size: 13px; line-height: 1.65; }
+
+  .room-meta { display: flex; gap: 7px; margin-top: 18px; color: #71717a; font-size: 11px; }
+
+  .room-bottom {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #27272a;
+  }
+
+  .host { gap: 9px; }
+
+  .avatar {
+    display: grid;
+    place-items: center;
+    width: 31px;
+    height: 31px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #7c3aed, #0891b2);
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .host div:last-child { display: flex; flex-direction: column; gap: 2px; }
+  .host small { color: #52525b; font-size: 8px; font-weight: 800; }
+  .host strong { font-size: 11px; }
+
+  .join-button {
+    border: 0;
+    border-radius: 9px;
+    padding: 9px 15px;
+    background: #27272a;
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .create-section {
+    width: min(1240px, calc(100% - 40px));
+    margin: 0 auto 80px;
+    padding: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 30px;
+    border: 1px solid #27272a;
+    border-radius: 20px;
+    background:
+      radial-gradient(circle at 90% 50%, rgba(6,182,212,.1), transparent 25rem),
+      rgba(18,18,22,.8);
+  }
+
+  .create-section p { max-width: 550px; margin: 10px 0 0; color: #a1a1aa; line-height: 1.6; }
+
+  .create-button {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 15px 20px;
+    border: 0;
+    border-radius: 12px;
+    background: #f4f4f5;
+    color: #09090b;
+    font-weight: 800;
+  }
+
+  .create-button span { font-size: 18px; }
+
+  footer {
+    width: min(1240px, calc(100% - 40px));
+    margin: 0 auto;
+    padding: 25px 0 35px;
+    border-top: 1px solid #18181b;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #52525b;
+    font-size: 11px;
+  }
+
+  .footer-brand { display: flex; align-items: center; gap: 8px; color: #a1a1aa; font-weight: 750; }
+  .footer-brand .brand-mark { width: 23px; height: 23px; border-radius: 7px; font-size: 12px; }
+
+  @media (max-width: 900px) {
+    .nav { display: none; }
+    .rooms-grid { grid-template-columns: 1fr; }
+    .room-card { min-height: auto; }
+  }
+
+  @media (max-width: 600px) {
+    .header { width: min(100% - 24px, 1240px); }
+    .login, .language { display: none; }
+    .create-small { padding: 9px 12px; }
+    .hero { width: min(100% - 24px, 1100px); padding: 75px 0 65px; }
+    .hero h1 { font-size: 55px; }
+    .hero p { font-size: 15px; }
+    .hero-actions { flex-direction: column; }
+    .hero-stats { gap: 25px; }
+    .hero-stats strong { font-size: 20px; }
+    .rooms-section { width: min(100% - 24px, 1240px); }
+    .create-section {
+      width: min(100% - 24px, 1240px);
+      margin-bottom: 50px;
+      padding: 25px;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    footer {
+      width: min(100% - 24px, 1240px);
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+  }
+</style>
